@@ -5,6 +5,7 @@ import * as tokenJson from './assets/CryrdleManual.json';
 import { ErrorMessageDTO, TxnResponseDTO } from './dto';
 import dotenv from 'dotenv';
 import { CoinsService } from './coins/coins.service';
+import { UsersService } from './users/users.service';
 dotenv.config()
 
 // const CRYRDLE_ADDRESS = "0x45e58025aFaa1Bb2334Fbb84C6DddB7a978281dB"
@@ -19,14 +20,26 @@ export class AppService {
   cryrdleContract = null;
   // webInstance = Web3;
 
-  CURRENT_GAME:number = 0;
+  CURRENT_GAME:number;
   ENTRY_FEE_ETH:number = null;
   ENTRY_FEE_WEI = null;
   COIN_OF_THE_DAY_IDX:number = null;
-  COIN_OF_THE_DAY_SYMBOL:string = "ETHER";
+  COIN_OF_THE_DAY_SYMBOL:string;
   PARTICIPANTS = [];
 
-  constructor(private coinsService: CoinsService) {
+  // 
+  // 
+  // 
+  //  circular dependency problem centering around the use of CoinsService
+  //  in this page; used to get the winning coin
+  // 
+  //  Figure it out and use forwardRer to do it right
+  //  https://docs.nestjs.com/fundamentals/circular-dependency
+  // 
+  // 
+  // constructor(private coinsService: CoinsService, private usersService: UsersService) {
+  // constructor(private coinsService: CoinsService) {
+  constructor() {
     this.provider = ethers.providers.getDefaultProvider('sepolia', {
       infura: process.env.INFURA_API_KEY
     });
@@ -42,24 +55,28 @@ export class AppService {
 
   // calling get current info calls all methods which updates class variables
   async getCurrentGameInfo(): Promise<any> {  
-    const game = await this.getCurrentGame();
-    const players = await this.getParticipants();
-    const fee = await this.getParticipationFee();
-    const coin_idx = await this.getCoinOfTheDay();
+    this.CURRENT_GAME = await this.getCurrentGame();
+    this.PARTICIPANTS = await this.getParticipants();
+    this.ENTRY_FEE_ETH = await this.getParticipationFee();
+    this.COIN_OF_THE_DAY_IDX = await this.getCoinOfTheDay();
+    this.COIN_OF_THE_DAY_SYMBOL = await this.getWinningCoinSymbol(this.COIN_OF_THE_DAY_IDX);
 
-    this.CURRENT_GAME = game;
-    this.PARTICIPANTS = players;
-    this.COIN_OF_THE_DAY_IDX = coin_idx;
-    const coin_symbol = await this.getWinningCoinSymbol(coin_idx);
-    this.COIN_OF_THE_DAY_SYMBOL = coin_symbol;
+    return {
+      game: this.CURRENT_GAME,
+      players: this.PARTICIPANTS,
+      fee: this.ENTRY_FEE_ETH,
+      winner: this.COIN_OF_THE_DAY_SYMBOL
+    };
+  }
 
-    console.log("stored values:")
-    console.log("game:", this.CURRENT_GAME);
-    console.log("fee:", this.ENTRY_FEE_ETH);
-    console.log("coin:", this.COIN_OF_THE_DAY_SYMBOL);
-
-    // return {game, players, fee, coin};
-    return {game, players, fee, coin_symbol};
+  async _getGameAndCoin(): Promise<any> {
+    console.log("SENDING VALUES:");
+    console.log("SENDING GAME:", this.CURRENT_GAME);
+    console.log("SENDING COIN:", this.COIN_OF_THE_DAY_IDX);
+    return { 
+      CURRENT_GAME: this.CURRENT_GAME, 
+      WIN_SYMBOL: this.COIN_OF_THE_DAY_SYMBOL
+    };
   }
 
   //---GETTERS
@@ -88,13 +105,10 @@ export class AppService {
   }
 
   async getUserIsPaid(address: string): Promise<boolean> {
-    console.log("checking if user is paid.....");
     const participants = await this.cryrdleContract.getParticipants();
-    console.log("address:", address);
-    console.log("participants:", participants);
     const response = participants.map(p => p.toLowerCase()).includes(address)
-    // const response = participants.includes(address.toLowerCase())
-    console.log("exists?", response);
+    console.log(address, "isPaid?", response);
+    // this.usersService.addGameToUser(address, this.CURRENT_GAME);
     return response;
   }
 
@@ -104,14 +118,14 @@ export class AppService {
     const coinBN = await this.cryrdleContract.getCoinOfTheDay();
     const coinInt = parseInt(coinBN);
     this.COIN_OF_THE_DAY_IDX = coinInt;
-    console.log("coinOfTheDay:", this.COIN_OF_THE_DAY_IDX);
     return coinInt;
   }
 
   async getWinningCoinSymbol(coinIdx: number): Promise<string> {
     // call mongoDB to get coin symbol and return index
-    console.log("getting winning coin symbol.....");
-    return await this.coinsService.getWinningCoinSymbol(coinIdx);
+    console.log("getting winning coin symbol...");
+    return "hello";
+    // return await this.coinsService.getWinningCoinSymbol(coinIdx);
   }
   
   //---SETTERS
@@ -136,8 +150,6 @@ export class AppService {
     } else {
       this.COIN_OF_THE_DAY_IDX = coinIdx;
       this.CURRENT_GAME += 1;
-      console.log("coin of day:", this.COIN_OF_THE_DAY_IDX)
-      console.log("current game:", this.CURRENT_GAME)
     }
     return {
       message: "Successfully set coin of the day",
