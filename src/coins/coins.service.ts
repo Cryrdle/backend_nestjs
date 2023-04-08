@@ -7,29 +7,25 @@ import { ErrorMessageDTO } from 'src/dto';
 
 import axios from 'axios';
 
-// let TODAY_WINNING_COIN:string = "DOGE";
-// let TODAY_WINNING_INDEX:number = null;
-// let TODAY_WINNING_COIN:object = null;
-
 let NUMBER_OF_COINS:number = 100;
 let NUMBER_OF_META:number = 50; // ultimately don't need this, but for now...
 
 @Injectable()
 export class CoinsService {
   constructor(@InjectModel(Coin.name) private coinModel: Model<CoinDocument>) {}
-  
-  async getWinningCoin(index: number): Promise<Coin> {
-    return this.coinModel.findOne({index: index}).exec();
+
+  async getWinningCoinSymbol(index: number): Promise<string> {
+    const coin = await this.coinModel.findOne().skip(index-1).limit(1).exec();
+    const data = coin.toJSON();
+    return data.symbol;
   }
   
   //--return all coins from DB, for dropdown list etc
   async findAll(): Promise<object[]> {
-    // return this.coinModel.find().exec();
     const coins = await this.coinModel.find().exec();
     const coinsWithLabel = coins.map((coin) => {
       return {
         ...coin.toJSON(),
-        // label: `${coin.name} (${coin.symbol})`,
       };
     });
     return coinsWithLabel;
