@@ -13,5 +13,6 @@ export class UpdateGuessesDto {
 export class UpdateGuessesResponseDto {
     success: boolean;
     message: string;
+    winner?: boolean;
 }
 
