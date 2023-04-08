@@ -8,7 +8,9 @@ import { ApiBody } from '@nestjs/swagger';
 export class AppController {
   constructor(
     private readonly appService: AppService
-  ) {}
+  ) {
+    console.log("app controller constructor");
+  }
 
   //---GETTERS  
 
@@ -28,13 +30,6 @@ export class AppController {
     return this.appService.getCoinOfTheDay();
   }
 
-  @Get("refresh-coins-list")
-  async saveCoinsToMongoDB(): Promise<void> {
-    // const metadata = await this.cmcService.getMetadata();
-    // const coins = Object.values(metadata.data);
-    // await this.mongoService.saveToMongoDB(coins);
-  }
-
   @Get("fee")
   getParticipationFee(): Promise<number> {
     return this.appService.getParticipationFee();
@@ -49,7 +44,9 @@ export class AppController {
 
   @Get("current-game-info")
   async getCurrentGameInfo(): Promise<any> {
-    return await this.appService.getCurrentGameInfo();
+    const data = await this.appService.getCurrentGameInfo();
+    // this.COIN_OF_THE_DAY_IDX = data.coin;
+    return data;
   }
 
   //---SETTERS

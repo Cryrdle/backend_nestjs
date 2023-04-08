@@ -5,6 +5,9 @@ import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UsersModule } from './users/users.module';
 import { CoinsModule } from './coins/coins.module';
+import { CoinsController } from './coins/coins.controller';
+import { CoinsService } from './coins/coins.service';
+import { Coin, CoinSchema } from './coins/schemas/coin.schema';
 
 
 @Module({
@@ -13,10 +16,11 @@ import { CoinsModule } from './coins/coins.module';
       useNewUrlParser: true,
       useUnifiedTopology: true,
     }),
+    MongooseModule.forFeature([{ name: Coin.name, schema: CoinSchema }]),
     UsersModule,
     CoinsModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [AppController, CoinsController],
+  providers: [AppService, CoinsService],
 })
 export class AppModule {}
